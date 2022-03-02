@@ -1,0 +1,8 @@
+pytest==7.0.1
+pytest-cov==3.0.0
+flake8==4.0.1
+tox==3.24.5
+mypy==0.931
+pylint==2.12.2
+pycodestyle==2.8.0
+pydocstyle==6.1.1
