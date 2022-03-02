@@ -24,13 +24,5 @@ jobs:
         pip install tox tox-gh-actions poetry flake8 pylint pycodestyle pydocstyle mypy
     - name: Test with tox
       run: tox
-    - name: Linting with flake8
-      run: poatry run flake8 src tests
-    - name: Pycodestyle
-      run: poetry run pycodestyle src tests
-    - name: Pydocstyle
-      run: poetry run pydocstyle src tests
-    - name: Linting with pylint
-      run: poetry run pylint src tests
     - name: Type checking with mypy
       run: poetry run mypy src
