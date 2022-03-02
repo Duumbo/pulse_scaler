@@ -21,6 +21,16 @@ jobs:
     - name: Install dependencies
       run:
         python -m pip install --upgrade pip
-        pip install tox tox-gh-actions poetry flake8 pylint pycodestyle pydocstyle
+        pip install tox tox-gh-actions poetry flake8 pylint pycodestyle pydocstyle mypy
     - name: Test with tox
       run: tox
+    - name: Linting with flake8
+      run: flake8 src tests
+    - name: Pycodestyle
+      run: pycodestyle src tests
+    - name: Pydocstyle
+      run: pydocstyle src tests
+    - name: Linting with pylint
+      run: pylint src tests
+    - name: Type checking with mypy
+      run: mypy src
