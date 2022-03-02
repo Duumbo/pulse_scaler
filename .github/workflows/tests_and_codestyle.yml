@@ -25,4 +25,4 @@ jobs:
     - name: Test with tox
       run: tox
     - name: Type checking with mypy
-      run: poetry run mypy src
+      run: poetry run mypy --strict src

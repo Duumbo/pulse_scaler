@@ -16,7 +16,7 @@ IBMQBACKEND = provider.get_backend("ibmq_lima")
 BACKEND = qs.Aer.get_backend("aer_simulator")
 
 
-def scale_simple_circuit():
+def scale_simple_circuit() -> None:
     """
     # scale_simple_circuit.
 
@@ -43,7 +43,7 @@ def scale_simple_circuit():
     plt.savefig("Images/scale_simple_circuit_scaled.png")
 
 
-def __main__():
+def __main__() -> None:
     scale_simple_circuit()
 
 

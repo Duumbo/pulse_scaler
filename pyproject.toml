@@ -30,8 +30,7 @@ testpaths = [
     "tests",
 ]
 
-[mypy]
-python_version = 3.10
+[tool.mypy]
 ignore_missing_imports = true
-[mypy-setup]
+[tool.mypy-setup]
 ignore_errors = true

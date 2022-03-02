@@ -156,3 +156,6 @@ poetry.lock
 
 # vscode
 settings.json
+
+# pycache
+*.pyc

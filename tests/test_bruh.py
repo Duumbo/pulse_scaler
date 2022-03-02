@@ -1,6 +1,6 @@
 """Tests."""
 
 
-def test_bruhbruh():
+def test_bruhbruh() -> None:
     """tests."""
     assert True
