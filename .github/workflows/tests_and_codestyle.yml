@@ -9,8 +9,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ['3.9', '3.10']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -25,12 +25,12 @@ jobs:
     - name: Test with tox
       run: tox
     - name: Linting with flake8
-      run: flake8 src tests
+      run: poatry run flake8 src tests
     - name: Pycodestyle
-      run: pycodestyle src tests
+      run: poetry run pycodestyle src tests
     - name: Pydocstyle
-      run: pydocstyle src tests
+      run: poetry run pydocstyle src tests
     - name: Linting with pylint
-      run: pylint src tests
+      run: poetry run pylint src tests
     - name: Type checking with mypy
-      run: mypy src
+      run: poetry run mypy src
