@@ -159,3 +159,4 @@ settings.json
 
 # pycache
 *.pyc
+tests/__pycache__/test_bruh.cpython-310-pytest-7.0.1.pyc
