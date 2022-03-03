@@ -7,6 +7,7 @@
 ### Autor: Dimitri Bonanni-Surprenant
 """
 import qiskit.pulse as ps
+from pulse_scaler.pulse_integrator import find_pulse_amp
 
 
 def one_qubit_scaler(sched: ps.Schedule) -> ps.Schedule:
@@ -25,7 +26,8 @@ def one_qubit_scaler(sched: ps.Schedule) -> ps.Schedule:
                 pulse, chan = instr.pulse, instr.channel
                 dur, amp, sig, beta = (pulse.duration, pulse.amp,
                                        pulse.sigma, pulse.beta)
-                new_pulse = ps.Drag(dur * 2, amp, sig * 2, beta)
+                amp = find_pulse_amp("Drag", dur, amp, sig, beta, 2)
+                new_pulse = ps.Drag(dur * 2, amp, sig * 2, beta * 2)
                 ancien_offset = offset
                 offset += dur * 2
                 instr = ps.Play(new_pulse, chan)

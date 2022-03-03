@@ -6,10 +6,25 @@
 Contains everything needed to integrate certain qiskit types of pulses.
 It also contains methods to keep pulse's under the cruve area constant.
 """
-
-from typing import Callable, Tuple, Any, cast
+from typing import Callable, Dict, Tuple, Any, Union, cast
 import numpy as np
 from scipy.integrate import quad
+from scipy.optimize import fsolve
+
+
+def _func_to_find_zero(integrator, func, amp):
+    """Return a value shifted to be zero when the area is constant."""
+    PulseIntegrator.amp.fset(integrator, amp)
+    new_area = func()
+    return new_area[0] - integrator.area[0]
+
+
+def func_as_real(func):
+    """Use a one argument function as real."""
+    def inner(args):
+        temp_number = func(complex(*args))
+        return [temp_number.real, temp_number.imag]
+    return inner
 
 
 def complex_quadrature(func: Callable[[float], complex],
@@ -45,74 +60,213 @@ def s_q(any_float: float) -> float:
     return any_float * any_float
 
 
-def gaussian_int(amp: complex,
+class PulseIntegrator:
+    """
+    # Integrator object for certain types of qiskit pulse.
+
+    Contains method to integrate the pulse of certain qiskit pulse.
+    Currently:
+    - Drag
+    - Gaussian
+    - Square Gaussian
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self,
+                 amp: complex,
                  dur: float,
-                 sig: float) -> Tuple[complex, float, float]:
-    """
-    # Integral of the gaussian pulse of qiskit.
+                 sig: float,
+                 **kwargs: Dict[str, Union[float, None]]) -> None:
+        """
+        Instantiate PulseIntegrator.
 
-    Computes the integral of the gaussian pulse from
-    qiskit.pulse.Gaussian.
-    """
-    halfdur = dur / 2
+        Args:
+        - amp: amplitude of the pulse.
+        - dur: time duration of the pulse.
+        - sig: std of the pulse.
+        - width: width of gaussian square pulse.
+        - beta: beta of drag pulse.
+        """
+        self.amp = amp
+        self.dur = dur
+        self.sig = sig
+        self.width = None
+        self.beta = None
+        self.area = self.gaussian_int()
+        for key, item in kwargs.items():
+            if "width" == key:
+                self.width = item
+                self.area = self.square_gauss_int()
+            if "beta" == key:
+                self.beta = item
+                self.area = self.drag_int()
 
-    def f_prime(tmp: float) -> float:
-        return cast(float, np.exp(-.5 * s_q(tmp - halfdur) / s_q(sig)))
-    fm1 = f_prime(-1)
+    def __str__(self):
+        """Print all the instance attributes."""
+        return f"""
+        area: {self.area}
+        amp: {self.amp},
+        dur: {self.dur},
+        sig: {self.sig},
+        width: {self.width},
+        beta: {self.beta}
+        """
 
-    def integral(tmp: float) -> complex:
-        return amp * (f_prime(tmp) - fm1) / (1 - fm1)
-    return complex_quadrature(integral, 0, dur)
+    @property
+    def width(self):
+        """Width for square gaussian pulse."""
+        return self._width
+
+    @width.setter
+    def width(self, val):
+        self._width = val
+
+    @property
+    def area(self):
+        """Area of pulse."""
+        return self._area
+
+    @area.setter
+    def area(self, val):
+        self._area = val
+
+    @property
+    def amp(self):
+        """Amplitude of pulse."""
+        return self._amp
+
+    @amp.setter
+    def amp(self, val):
+        self._amp = val
+
+    @property
+    def sig(self):
+        """Std of pulse."""
+        return self._sig
+
+    @sig.setter
+    def sig(self, val):
+        self._sig = val
+
+    @property
+    def beta(self):
+        """Beta for Drag pulse."""
+        return self._beta
+
+    @beta.setter
+    def beta(self, val):
+        self._beta = val
+
+    @property
+    def dur(self):
+        """Duration of pulse."""
+        return self._dur
+
+    @dur.setter
+    def dur(self, val):
+        self._dur = val
+
+    def gaussian_int(self) -> Tuple[complex, float, float]:
+        """
+        # Integral of the gaussian pulse of qiskit.
+
+        Computes the integral of the gaussian pulse from
+        qiskit.pulse.Gaussian.
+        """
+        dur = self.dur
+        sig = self.sig
+        amp = self.amp
+        halfdur = dur / 2
+
+        def f_prime(tmp: float) -> float:
+            return cast(float, np.exp(-.5 * s_q(tmp - halfdur) / s_q(sig)))
+        fm1 = f_prime(-1)
+
+        def integral(tmp: float) -> complex:
+            return amp * (f_prime(tmp) - fm1) / (1 - fm1)
+        return complex_quadrature(integral, 0, dur)
+
+    def square_gauss_int(self) -> Tuple[complex, float, float]:
+        """
+        # Integral of the square gaussian pulse of qiskit.
+
+        Computes the integral of the square gaussian pulse from
+        qiskit.pulse.SquareGaussian.
+        """
+        width = self.width
+        dur = self.dur
+        sig = self.sig
+        amp = self.amp
+        if width is None:
+            errmess = "Argument 'width' is required for 'square_gauss_int'"
+            raise ValueError(errmess)
+        rise_fall = (dur - width) / 2
+
+        def f_prime(x_val: float) -> float:
+            if x_val < rise_fall:
+                output = np.exp(-.5 * s_q(x_val - rise_fall) / s_q(sig))
+            elif rise_fall <= x_val < rise_fall + width:
+                output = 1
+            elif rise_fall + width <= x_val:
+                num = x_val - rise_fall + width
+                output = np.exp(-.5 * s_q(num) / s_q(sig))
+            return float(output)
+        fm1 = f_prime(-1)
+
+        def integral(tmp: float) -> complex:
+            return amp * (f_prime(tmp) - fm1) / (1 - fm1)
+        return complex_quadrature(integral, 0, dur)
+
+    def drag_int(self) -> Tuple[complex, float, float]:
+        """
+        # Integral of the drag pulse of qiskit.
+
+        Computes the integral of the drag pulse from
+        qiskit.pulse.Drag.
+        """
+        beta = self.beta
+        amp = self.amp
+        dur = self.dur
+        sig = self.sig
+        if beta is None:
+            errmess = "Argument 'width' is required for 'square_gauss_int'"
+            raise ValueError(errmess)
+        halfdur = dur / 2
+
+        def g_func(x_val: float) -> float:
+            return float(np.exp(-.5 * s_q(x_val - halfdur) / s_q(sig)))
+
+        def f_prime(x_val: float) -> complex:
+            g_prime = (halfdur - x_val) * g_func(x_val) / s_q(sig)
+            return g_func(x_val) + 0j * beta * g_prime
+
+        fm1 = f_prime(-1)
+
+        def integral(tmp: float) -> complex:
+            return amp * (f_prime(tmp) - fm1) / (1 - fm1)
+        return complex_quadrature(integral, 0, dur)
 
 
-def square_gauss_int(amp: complex,
-                     dur: float,
-                     width: float,
-                     sig: float) -> Tuple[complex, float, float]:
-    """
-    # Integral of the square gaussian pulse of qiskit.
+def find_pulse_amp(pulse: str,
+                   dur: float,
+                   amp: complex,
+                   sig: float,
+                   beta: float,
+                   scale: float) -> Union[complex, None]:
+    """Find the pulse amplitude of a scaled pulse."""
+    # pylint: disable=too-many-arguments
+    # Will fix later
+    if pulse == "Drag":
+        integrator = PulseIntegrator(amp, dur, sig, beta=beta)
+        integrator.dur = dur * scale
+        integrator.sig = sig * scale
+        integrator.beta = beta * scale
 
-    Computes the integral of the square gaussian pulse from
-    qiskit.pulse.SquareGaussian.
-    """
-    rise_fall = (dur - width) / 2
-
-    def f_prime(x_val: float) -> float:
-        if x_val < rise_fall:
-            output = np.exp(-.5 * s_q(x_val - rise_fall) / s_q(sig))
-        elif rise_fall <= x_val < rise_fall + width:
-            output = 1
-        elif rise_fall + width <= x_val:
-            output = np.exp(-.5 * s_q(x_val - (rise_fall + width)) / s_q(sig))
-        return float(output)
-    fm1 = f_prime(-1)
-
-    def integral(tmp: float) -> complex:
-        return amp * (f_prime(tmp) - fm1) / (1 - fm1)
-    return complex_quadrature(integral, 0, dur)
-
-
-def drag_int(amp: complex,
-             dur: float,
-             beta: float,
-             sig: float) -> Tuple[complex, float, float]:
-    """
-    # Integral of the drag pulse of qiskit.
-
-    Computes the integral of the drag pulse from
-    qiskit.pulse.Drag.
-    """
-    halfdur = dur / 2
-
-    def g_func(x_val: float) -> float:
-        return float(np.exp(-.5 * s_q(x_val - halfdur) / s_q(sig)))
-
-    def f_prime(x_val: float) -> complex:
-        g_prime = (halfdur - x_val) * g_func(x_val) / s_q(sig)
-        return g_func(x_val) + 0j * beta * g_prime
-
-    fm1 = f_prime(-1)
-
-    def integral(tmp: float) -> complex:
-        return amp * (f_prime(tmp) - fm1) / (1 - fm1)
-    return complex_quadrature(integral, 0, dur)
+        @func_as_real
+        def optimize(amplitude):
+            return _func_to_find_zero(integrator,
+                                      integrator.drag_int,
+                                      amplitude)
+        return complex(*fsolve(optimize, [amp.real, amp.imag]))
+    return None
