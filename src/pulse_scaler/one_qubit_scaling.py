@@ -33,5 +33,17 @@ def one_qubit_scaler(sched: ps.Schedule) -> ps.Schedule:
                 instr = ps.Play(new_pulse, chan)
             tmp_sched += instr << ancien_offset
         out_sched += tmp_sched
+    meas_sched = ps.Schedule()
+    d0 = ps.MeasureChannel(0)
+    mem0 = ps.MemorySlot(1)
+    precise_amp = 0.3051214347689275+0.1714669357180885j
+    meas_pulse = ps.GaussianSquare(duration=22400,
+                                   amp=precise_amp,
+                                   sigma=64,
+                                   width=22144,
+                                   name='M_m0')
+    meas_sched += ps.Acquire(22400, d0, mem0)
+    meas_sched += ps.Play(meas_pulse, d0, name='M_m0')
+    out_sched += meas_sched << offset
 
     return out_sched

@@ -32,20 +32,24 @@ def scale_simple_circuit() -> None:
     qreg, creg = qs.QuantumRegister(1), qs.ClassicalRegister(1)
     q_c = qs.QuantumCircuit(qreg, creg)
     q_c.h(qreg)
+    qc_no_meas = qs.compiler.transpile(q_c, IBMQBACKEND, optimization_level=3)
+    q_c.measure_all()
     # Transpile to the backend.
     trans_qc = qs.compiler.transpile(q_c, IBMQBACKEND, optimization_level=3)
     # Convert to schedule.
-    qc_sched = qs.schedule(trans_qc, IBMQBACKEND)
+    qc_sched = qs.schedule(qc_no_meas, IBMQBACKEND)
     scaled_qc = one_qubit_scaler(qc_sched)
-    # acq_pulse = ps.Acquire(100, ps.AcquireChannel(0), ps.MemorySlot(0))
-    # qc_sched += acq_pulse
-    job = qs.execute(qc_sched, IBMQBACKEND, meas_return='avg')
+    qc_sched = qs.schedule(trans_qc, IBMQBACKEND)
+    print(qc_sched.children[-1])
+    print(scaled_qc.children[-1])
+    job = qs.execute(qc_sched, BACKEND, meas_return='avg', shots=10000)
     qs.tools.job_monitor(job)
     sim_result = job.result()
     # Scale the schedule.
-    job = qs.execute(scaled_qc, IBMQBACKEND, meas_return='avg')
+    job = qs.execute(scaled_qc, BACKEND, meas_return='avg')
+    qs.tools.job_monitor(job)
     scaled_sim_result = job.result()
-    print(sim_result, scaled_sim_result)
+    print(sim_result.get_counts(), scaled_sim_result.get_counts())
     # Generate the images.
     qc_sched.draw()
     plt.tight_layout()
