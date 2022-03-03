@@ -238,10 +238,10 @@ def complex_quadrature(func: Callable[[float], complex],
     """
 
     def real_func(tmp: float) -> float:
-        return np.real(func(tmp))
+        return float(np.real(func(tmp)))
 
     def imag_func(tmp: float) -> float:
-        return np.imag(func(tmp))
+        return float(np.imag(func(tmp)))
     real_integral = quad(real_func, lower_bound, upper_bound, **kwargs)
     imag_integral = quad(imag_func, lower_bound, upper_bound, **kwargs)
     return (real_integral[0] + 1j*imag_integral[0],
