@@ -54,7 +54,7 @@ class PulseIntegrator:
                 self.beta = item
                 self.area = self.drag_int()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Print all the instance attributes."""
         return f"""
         area: {self.area}
@@ -214,7 +214,7 @@ def _func_to_find_zero(integrator: PulseIntegrator,
 def func_as_real(func: Callable[[complex], complex]
                  ) -> Callable[[list[float]], list[float]]:
     """Use a one argument function as real."""
-    def inner(args):
+    def inner(args: list[float]) -> list[float]:
         temp_number = func(complex(*args))
         return [temp_number.real, temp_number.imag]
     return inner
@@ -238,10 +238,10 @@ def complex_quadrature(func: Callable[[float], complex],
     """
 
     def real_func(tmp: float) -> float:
-        return cast(float, np.real(func(tmp)))
+        return np.real(func(tmp))
 
     def imag_func(tmp: float) -> float:
-        return cast(float, np.imag(func(tmp)))
+        return np.imag(func(tmp))
     real_integral = quad(real_func, lower_bound, upper_bound, **kwargs)
     imag_integral = quad(imag_func, lower_bound, upper_bound, **kwargs)
     return (real_integral[0] + 1j*imag_integral[0],
@@ -269,7 +269,7 @@ def find_pulse_amp(pulse: str,
         integrator.beta = beta * scale
 
         @func_as_real
-        def optimize(amplitude):
+        def optimize(amplitude: complex) -> complex:
             return _func_to_find_zero(integrator,
                                       integrator.drag_int,
                                       amplitude)

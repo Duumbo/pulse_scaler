@@ -24,7 +24,7 @@ def test_integrator() -> None:
     assert result == result1
 
 
-def test_assuming_pulse_shape():
+def test_assuming_pulse_shape() -> None:
     """Testing that the integrator assumes the right pulse on init."""
     integrator = integ.PulseIntegrator(1+1j, 0.5, 0.5)
     assert integrator.gaussian_int() == integrator.area
@@ -34,7 +34,7 @@ def test_assuming_pulse_shape():
     assert integrator.drag_int() == integrator.area
 
 
-def test_kill_unsupported_integrals():
+def test_kill_unsupported_integrals() -> None:
     """Testing that the right error is raised."""
     integrator = integ.PulseIntegrator(1+1j, 0.5, 0.5)
     try:
