@@ -6,58 +6,10 @@
 Contains everything needed to integrate certain qiskit types of pulses.
 It also contains methods to keep pulse's under the cruve area constant.
 """
-from typing import Callable, Dict, Tuple, Any, Union, cast
+from typing import Callable, Any, cast
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import fsolve
-
-
-def _func_to_find_zero(integrator, func, amp):
-    """Return a value shifted to be zero when the area is constant."""
-    PulseIntegrator.amp.fset(integrator, amp)
-    new_area = func()
-    return new_area[0] - integrator.area[0]
-
-
-def func_as_real(func):
-    """Use a one argument function as real."""
-    def inner(args):
-        temp_number = func(complex(*args))
-        return [temp_number.real, temp_number.imag]
-    return inner
-
-
-def complex_quadrature(func: Callable[[float], complex],
-                       lower_bound: float,
-                       upper_bound: float,
-                       **kwargs: Any) -> Tuple[complex, float, float]:
-    """
-    # Complex quadrature of a function.
-
-    Computes the complex quadrature of a function by using two integrals
-    to avoid an error by scipy about handling complex numbers.
-
-    params:
-        func: function to integrate, Callable
-        lower_bound: lower bound, float
-        upper_bound: upper bound, float
-        kwargs: any keyword arguments to pass to quad.
-    """
-
-    def real_func(tmp: float) -> float:
-        return cast(float, np.real(func(tmp)))
-
-    def imag_func(tmp: float) -> float:
-        return cast(float, np.imag(func(tmp)))
-    real_integral = quad(real_func, lower_bound, upper_bound, **kwargs)
-    imag_integral = quad(imag_func, lower_bound, upper_bound, **kwargs)
-    return (real_integral[0] + 1j*imag_integral[0],
-            real_integral[1:], imag_integral[1:])
-
-
-def s_q(any_float: float) -> float:
-    """Squares number."""
-    return any_float * any_float
 
 
 class PulseIntegrator:
@@ -77,7 +29,7 @@ class PulseIntegrator:
                  amp: complex,
                  dur: float,
                  sig: float,
-                 **kwargs: Dict[str, Union[float, None]]) -> None:
+                 **kwargs: float | None) -> None:
         """
         Instantiate PulseIntegrator.
 
@@ -114,60 +66,60 @@ class PulseIntegrator:
         """
 
     @property
-    def width(self):
+    def width(self) -> float | None:
         """Width for square gaussian pulse."""
         return self._width
 
     @width.setter
-    def width(self, val):
+    def width(self, val: float | None) -> None:
         self._width = val
 
     @property
-    def area(self):
+    def area(self) -> tuple[complex, float, float]:
         """Area of pulse."""
         return self._area
 
     @area.setter
-    def area(self, val):
+    def area(self, val: tuple[complex, float, float]) -> None:
         self._area = val
 
     @property
-    def amp(self):
+    def amp(self) -> complex:
         """Amplitude of pulse."""
         return self._amp
 
     @amp.setter
-    def amp(self, val):
+    def amp(self, val: complex) -> None:
         self._amp = val
 
     @property
-    def sig(self):
+    def sig(self) -> float:
         """Std of pulse."""
         return self._sig
 
     @sig.setter
-    def sig(self, val):
+    def sig(self, val: float) -> None:
         self._sig = val
 
     @property
-    def beta(self):
+    def beta(self) -> float | None:
         """Beta for Drag pulse."""
         return self._beta
 
     @beta.setter
-    def beta(self, val):
+    def beta(self, val: float | None) -> None:
         self._beta = val
 
     @property
-    def dur(self):
+    def dur(self) -> float:
         """Duration of pulse."""
         return self._dur
 
     @dur.setter
-    def dur(self, val):
+    def dur(self, val: float) -> None:
         self._dur = val
 
-    def gaussian_int(self) -> Tuple[complex, float, float]:
+    def gaussian_int(self) -> tuple[complex, float, float]:
         """
         # Integral of the gaussian pulse of qiskit.
 
@@ -187,7 +139,7 @@ class PulseIntegrator:
             return amp * (f_prime(tmp) - fm1) / (1 - fm1)
         return complex_quadrature(integral, 0, dur)
 
-    def square_gauss_int(self) -> Tuple[complex, float, float]:
+    def square_gauss_int(self) -> tuple[complex, float, float]:
         """
         # Integral of the square gaussian pulse of qiskit.
 
@@ -201,15 +153,16 @@ class PulseIntegrator:
         if width is None:
             errmess = "Argument 'width' is required for 'square_gauss_int'"
             raise ValueError(errmess)
+        assert isinstance(width, float)
         rise_fall = (dur - width) / 2
 
         def f_prime(x_val: float) -> float:
             if x_val < rise_fall:
                 output = np.exp(-.5 * s_q(x_val - rise_fall) / s_q(sig))
-            elif rise_fall <= x_val < rise_fall + width:
+            elif rise_fall <= x_val < rise_fall + cast(float, width):
                 output = 1
-            elif rise_fall + width <= x_val:
-                num = x_val - rise_fall + width
+            elif rise_fall + cast(float, width) <= x_val:
+                num = x_val - rise_fall + cast(float, width)
                 output = np.exp(-.5 * s_q(num) / s_q(sig))
             return float(output)
         fm1 = f_prime(-1)
@@ -218,7 +171,7 @@ class PulseIntegrator:
             return amp * (f_prime(tmp) - fm1) / (1 - fm1)
         return complex_quadrature(integral, 0, dur)
 
-    def drag_int(self) -> Tuple[complex, float, float]:
+    def drag_int(self) -> tuple[complex, float, float]:
         """
         # Integral of the drag pulse of qiskit.
 
@@ -232,6 +185,7 @@ class PulseIntegrator:
         if beta is None:
             errmess = "Argument 'width' is required for 'square_gauss_int'"
             raise ValueError(errmess)
+        assert isinstance(beta, float)
         halfdur = dur / 2
 
         def g_func(x_val: float) -> float:
@@ -239,7 +193,7 @@ class PulseIntegrator:
 
         def f_prime(x_val: float) -> complex:
             g_prime = (halfdur - x_val) * g_func(x_val) / s_q(sig)
-            return g_func(x_val) + 0j * beta * g_prime
+            return g_func(x_val) + 0j * cast(float, beta) * g_prime
 
         fm1 = f_prime(-1)
 
@@ -248,12 +202,63 @@ class PulseIntegrator:
         return complex_quadrature(integral, 0, dur)
 
 
+def _func_to_find_zero(integrator: PulseIntegrator,
+                       func: Callable[[], tuple[complex, float, float]],
+                       amp: complex) -> complex:
+    """Return a value shifted to be zero when the area is constant."""
+    PulseIntegrator.amp.fset(integrator, amp)  # type: ignore
+    new_area = func()
+    return new_area[0] - integrator.area[0]
+
+
+def func_as_real(func: Callable[[complex], complex]
+                 ) -> Callable[[list[float]], list[float]]:
+    """Use a one argument function as real."""
+    def inner(args):
+        temp_number = func(complex(*args))
+        return [temp_number.real, temp_number.imag]
+    return inner
+
+
+def complex_quadrature(func: Callable[[float], complex],
+                       lower_bound: float,
+                       upper_bound: float,
+                       **kwargs: Any) -> tuple[complex, float, float]:
+    """
+    # Complex quadrature of a function.
+
+    Computes the complex quadrature of a function by using two integrals
+    to avoid an error by scipy about handling complex numbers.
+
+    params:
+        func: function to integrate, Callable
+        lower_bound: lower bound, float
+        upper_bound: upper bound, float
+        kwargs: any keyword arguments to pass to quad.
+    """
+
+    def real_func(tmp: float) -> float:
+        return cast(float, np.real(func(tmp)))
+
+    def imag_func(tmp: float) -> float:
+        return cast(float, np.imag(func(tmp)))
+    real_integral = quad(real_func, lower_bound, upper_bound, **kwargs)
+    imag_integral = quad(imag_func, lower_bound, upper_bound, **kwargs)
+    return (real_integral[0] + 1j*imag_integral[0],
+            real_integral[1:], imag_integral[1:])
+
+
+def s_q(any_float: float) -> float:
+    """Squares number."""
+    return any_float * any_float
+
+
 def find_pulse_amp(pulse: str,
                    dur: float,
                    amp: complex,
                    sig: float,
                    beta: float,
-                   scale: float) -> Union[complex, None]:
+                   scale: float) -> complex | None:
     """Find the pulse amplitude of a scaled pulse."""
     # pylint: disable=too-many-arguments
     # Will fix later

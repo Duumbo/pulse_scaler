@@ -161,3 +161,6 @@ settings.json
 *.pyc
 !**/__pycache__/
 tests/__pycache__/test_bruh.cpython-310-pytest-7.0.1.pyc
+
+# Lint script
+linter.sh
