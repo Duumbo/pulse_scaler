@@ -5,6 +5,7 @@ import pulse_scaler.pulse_integrator as integ
 
 def test_integrator() -> None:
     """Testing the implementation of PulseIntegrator"""
+    # pylint: disable=duplicate-code
     # Testing proper implementation of object with properties
     integrator = integ.PulseIntegrator(1+1j, 0.5, 0.5, width=0.5, beta=0.5)
     drag = integrator.drag_int()

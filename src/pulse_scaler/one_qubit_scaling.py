@@ -8,16 +8,19 @@
 """
 import qiskit.pulse as ps
 from pulse_scaler.pulse_integrator import find_pulse_amp
+from pulse_scaler.load_ibmq import MEAS_SCHED
 
 
-def one_qubit_scaler(sched: ps.Schedule) -> ps.Schedule:
+def one_qubit_scaler(sched: ps.Schedule, scale_factor: float) -> ps.Schedule:
     """
     # One Qubit Scaler.
 
     Scales a schedule on one qubit
     """
+    # pylint: disable=too-many-locals.
+    # Will fix later.
+
     offset = 0
-    ancien_offset = 0
     out_sched = ps.Schedule()
     for _, sub_sched in sched.children:
         tmp_sched = ps.Schedule()
@@ -26,24 +29,16 @@ def one_qubit_scaler(sched: ps.Schedule) -> ps.Schedule:
                 pulse, chan = instr.pulse, instr.channel
                 dur, amp, sig, beta = (pulse.duration, pulse.amp,
                                        pulse.sigma, pulse.beta)
-                amp = find_pulse_amp("Drag", dur, amp, sig, beta, 2)
-                new_pulse = ps.Drag(dur * 2, amp, sig * 2, beta * 2)
-                ancien_offset = offset
-                offset += dur * 2
+                amp = find_pulse_amp("Drag", dur, amp, sig, beta, scale_factor)
+                new_pulse = ps.Drag(
+                    dur * scale_factor,
+                    amp, sig * scale_factor,
+                    beta * scale_factor
+                )
+                offset += dur * scale_factor
                 instr = ps.Play(new_pulse, chan)
-            tmp_sched += instr << ancien_offset
+            tmp_sched += instr
         out_sched += tmp_sched
-    meas_sched = ps.Schedule()
-    d0 = ps.MeasureChannel(0)
-    mem0 = ps.MemorySlot(1)
-    precise_amp = 0.3051214347689275+0.1714669357180885j
-    meas_pulse = ps.GaussianSquare(duration=22400,
-                                   amp=precise_amp,
-                                   sigma=64,
-                                   width=22144,
-                                   name='M_m0')
-    meas_sched += ps.Acquire(22400, d0, mem0)
-    meas_sched += ps.Play(meas_pulse, d0, name='M_m0')
-    out_sched += meas_sched << offset
+    out_sched += MEAS_SCHED << offset
 
     return out_sched
