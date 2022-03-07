@@ -3,20 +3,20 @@
 """Test related to the scaling of a circuit."""
 import math
 import qiskit as qs
-from pulse_scaler import load_ibmq as cons
+from pulse_scaler.backends import load_ibmq as cons
 from pulse_scaler.one_qubit_scaling import one_qubit_scaler
 
 
 def test_single_h() -> None:
-    """Tests implementation of scaled circuit vs unscaled."""
+    """Tests implementation of scaled circuit vs unscaled on no_noise_sim."""
     qreg = qs.QuantumRegister(1)
     creg = qs.ClassicalRegister(1)
     q_c = qs.QuantumCircuit(qreg, creg)
     q_c.h(qreg)
     trans_qc = qs.compiler.transpile(q_c,
-                                     cons.IBMQBACKEND,
+                                     cons.BACKEND,
                                      optimization_level=0)
-    qc_sched = qs.schedule(trans_qc, cons.IBMQBACKEND)
+    qc_sched = qs.schedule(trans_qc, cons.BACKEND)
     scaled_qc = one_qubit_scaler(qc_sched, 2)
     qc_sched += cons.MEAS_SCHED << qc_sched.duration
     job = qs.execute(
@@ -52,9 +52,9 @@ def test_regular_noiseless_circuit() -> None:
     q_c = qs.QuantumCircuit(qreg, creg)
     q_c.h(qreg)
     trans_qc = qs.compiler.transpile(q_c,
-                                     cons.IBMQBACKEND,
+                                     cons.BACKEND,
                                      optimization_level=0)
-    qc_sched = qs.schedule(trans_qc, cons.IBMQBACKEND)
+    qc_sched = qs.schedule(trans_qc, cons.BACKEND)
     qc_sched += cons.MEAS_SCHED << qc_sched.duration
     job = qs.execute(
         qc_sched,
@@ -79,11 +79,7 @@ def test_regular_noiseless_circuit() -> None:
     job = qs.execute(q_c, backend, shots=cons.SHOTS)
     qs.tools.job_monitor(job)
     norm_result = job.result()
-    print(norm_result.get_counts())
     exp_val_norm = norm_result.get_counts()["1 0"] / cons.SHOTS
     exp_val_sched = sim_result.get_counts()["1"] / cons.SHOTS
     print(exp_val_norm, exp_val_sched)
     assert math.isclose(exp_val_norm, exp_val_sched, rel_tol=0.1)
-
-
-test_regular_noiseless_circuit()

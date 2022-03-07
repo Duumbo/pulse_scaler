@@ -8,7 +8,7 @@ Generates images of scaled circuit represented as qiskit.pulse.Schedule
 import qiskit as qs
 import matplotlib.pyplot as plt
 from pulse_scaler.one_qubit_scaling import one_qubit_scaler
-import pulse_scaler.load_ibmq as cons
+import pulse_scaler.backends.load_ibmq as cons
 
 
 def scale_simple_circuit() -> None:
@@ -21,13 +21,12 @@ def scale_simple_circuit() -> None:
     # Create quantum circuit.
     qreg, creg = qs.QuantumRegister(1), qs.ClassicalRegister(1)
     q_c = qs.QuantumCircuit(qreg, creg)
-    q_c.x(qreg)
     trans_qc = qs.compiler.transpile(q_c,
-                                     cons.IBMQBACKEND,
+                                     cons.BACKEND,
                                      optimization_level=0)
     # Transpile to the backend.
     # Convert to schedule.
-    qc_sched = qs.schedule(trans_qc, cons.IBMQBACKEND)
+    qc_sched = qs.schedule(trans_qc, cons.BACKEND)
     scaled_qc = one_qubit_scaler(qc_sched, 2)
     qc_sched += cons.MEAS_SCHED << qc_sched.duration
     job = qs.execute(

@@ -8,7 +8,7 @@
 """
 import qiskit.pulse as ps
 from pulse_scaler.pulse_integrator import find_pulse_amp
-from pulse_scaler.load_ibmq import MEAS_SCHED
+from pulse_scaler.backends.load_ibmq import MEAS_SCHED
 
 
 def one_qubit_scaler(sched: ps.Schedule, scale_factor: float) -> ps.Schedule:
