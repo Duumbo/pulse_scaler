@@ -17,28 +17,52 @@ import qiskit as qs
 from qiskit.providers.aer import PulseSimulator
 from qiskit.providers.aer.pulse import PulseSystemModel
 from qiskit.test.mock import fake_pulse_backend
+import numpy as np
+SEED = 67934
 
 
 class NoiseLessBackend(fake_pulse_backend.FakePulseBackend):  # type: ignore
     """A fake 1 qubit backend with a low noise as possible."""
 
+    np.random.seed(SEED)
+
     dirname = os.path.dirname(__file__)
-    conf_filename = "conf.json"
-    props_filename = "props.json"
-    defs_filename = "defs.json"
+    conf_filename = "noise_less/conf.json"
+    props_filename = "noise_less/props.json"
+    defs_filename = "noise_less/defs.json"
     backend_name = "noiseless_sim"
 
+    def __init__(self) -> None:
+        """Noiseless Backend."""
+        super().__init__()
+        self.std = 0.0
 
-SEED = 6793428708
+
+class NoiseBackend(fake_pulse_backend.FakePulseBackend):  # type: ignore
+    """A fake 1 qubit backend with a low noise as possible."""
+
+    np.random.seed(SEED)
+
+    dirname = os.path.dirname(__file__)
+    conf_filename = "base_noise/conf.json"
+    props_filename = "base_noise/props.json"
+    defs_filename = "base_noise/defs.json"
+    backend_name = "noise_sim"
+
+    def __init__(self, scale_factor: int) -> None:
+        """Initialize as Noisy fake backend."""
+        _ = scale_factor
+        super().__init__()
+
+
 SHOTS = 10_000
-BASIS = ['id', 'rx', 'sx', 'x']
+BASIS = ['id', 'rx', 'sx', 'x', 'cx']
 provider = qs.IBMQ.get_provider(hub="ibm-q-sherbrooke",
                                 group="udes", project="eibmq-iq")
-IBMQBACKEND = provider.get_backend("ibmq_armonk")
-backend = NoiseLessBackend()
+IBMQBACKEND = provider.get_backend("ibmq_jakarta")
+backend = IBMQBACKEND
 FREQ_EST = 4.97e9
 DRIVE_EST = 6.35e7
-backend.defaults().qubit_freq_est = [FREQ_EST]
 backen_config = backend.configuration()
 defaults = backend.defaults()
 armonk_model = PulseSystemModel.from_backend(backend)

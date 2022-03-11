@@ -50,7 +50,7 @@
     "allow_q_object": true,
     "multi_meas_enabled": true,
     "parametric_pulses": ["gaussian", "gaussian_square", "drag", "constant"],
-    "quantum_volume": 10,
+    "quantum_volume": 1,
     "qubit_channel_mapping": [["d0", "m0"]],
     "uchannels_enabled": true,
     "url": "None",

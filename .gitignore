@@ -164,3 +164,8 @@ tests/__pycache__/test_bruh.cpython-310-pytest-7.0.1.pyc
 
 # Lint script
 linter.sh
+rapport/physicalreview_template.aux
+rapport/physicalreview_template.fdb_latexmk
+rapport/physicalreview_template.fls
+rapport/physicalreview_template.synctex.gz
+.gitignore

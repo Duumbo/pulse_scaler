@@ -6,7 +6,7 @@
 Contains everything needed to integrate certain qiskit types of pulses.
 It also contains methods to keep pulse's under the cruve area constant.
 """
-from typing import Callable, Any, cast
+from typing import Callable, Optional, Any, cast
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import fsolve
@@ -257,12 +257,14 @@ def find_pulse_amp(pulse: str,
                    dur: float,
                    amp: complex,
                    sig: float,
-                   beta: float,
-                   scale: float) -> complex | None:
+                   scale: float,
+                   beta: Optional[float] = None,
+                   width: Optional[float] = None) -> complex | None:
     """Find the pulse amplitude of a scaled pulse."""
     # pylint: disable=too-many-arguments
     # Will fix later
     if pulse == "Drag":
+        beta = cast(float, beta)
         integrator = PulseIntegrator(amp, dur, sig, beta=beta)
         integrator.dur = dur * scale
         integrator.sig = sig * scale
@@ -274,4 +276,29 @@ def find_pulse_amp(pulse: str,
                                       integrator.drag_int,
                                       amplitude)
         return complex(*fsolve(optimize, [amp.real, amp.imag]))
+    if pulse == "Gaussian_Square":
+        width = cast(float, width)
+        integrator = PulseIntegrator(amp, dur, sig, width=width)
+        integrator.width = cast(float, integrator.width)
+        integrator.dur *= scale
+        integrator.sig *= scale
+        integrator.width *= scale
+
+        @func_as_real
+        def optimize2(amplitude: complex) -> complex:
+            return _func_to_find_zero(integrator,
+                                      integrator.square_gauss_int,
+                                      amplitude)
+        return complex(*fsolve(optimize2, [amp.real, amp.imag]))
+    if pulse == "Gaussian":
+        integrator = PulseIntegrator(amp, dur, sig)
+        integrator.dur *= scale
+        integrator.sig *= scale
+
+        @func_as_real
+        def optimize3(amplitude: complex) -> complex:
+            return _func_to_find_zero(integrator,
+                                      integrator.gaussian_int,
+                                      amplitude)
+        return complex(*fsolve(optimize3, [amp.real, amp.imag]))
     return None

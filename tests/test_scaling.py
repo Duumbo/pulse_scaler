@@ -4,7 +4,7 @@
 import math
 import qiskit as qs
 from pulse_scaler.backends import load_ibmq as cons
-from pulse_scaler.one_qubit_scaling import one_qubit_scaler
+from pulse_scaler.qubit_scaling import qubit_scaler
 
 
 def test_single_h() -> None:
@@ -17,7 +17,7 @@ def test_single_h() -> None:
                                      cons.BACKEND,
                                      optimization_level=0)
     qc_sched = qs.schedule(trans_qc, cons.BACKEND)
-    scaled_qc = one_qubit_scaler(qc_sched, 2)
+    scaled_qc = qubit_scaler(qc_sched, 2)
     qc_sched += cons.MEAS_SCHED << qc_sched.duration
     job = qs.execute(
         qc_sched,
